@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko"><!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>RAON AI PROCESSOR - 로그인</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="../shared/theme.css" />
+
+  <!-- (선택) favicon 없으면 404만 뜹니다. 기능 영향 없음 -->
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png" />
+  <meta name="theme-color" content="#0a1120" />
+</head>
+
+<body class="auth-page">
+  <main class="auth-wrap">
+    <section class="auth-card" aria-label="로그인 카드">
+      <div class="auth-brand">
+        <div class="auth-title">RAON <span class="accent">AI</span> <span class="thin">PROCESSOR</span></div>
+        <div class="auth-sub">AI 투자 프로세서를 이용하려면 로그인이 필요합니다.</div>
+      </div>
+
+      <div class="auth-form">
+        <label class="auth-label" for="loginId">아이디</label>
+        <input class="auth-input" id="loginId" type="text" placeholder="아이디를 입력하세요" autocomplete="username" />
+
+        <label class="auth-label" for="loginPw">비밀번호</label>
+        <div class="auth-password">
+          <input class="auth-input" id="loginPw" type="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password" />
+          <button class="auth-eye" id="togglePw" type="button" aria-label="비밀번호 보기">👁</button>
+        </div>
+
+        <!-- ✅ 하단 버튼 1세트만 유지 (로그인/회원가입) -->
+        <div class="auth-actions">
+          <button class="auth-btn primary" id="btnLogin" type="button">로그인</button>
+          <button class="auth-btn" id="btnGoSignup" type="button">회원가입</button>
+        </div>
+
+        <div class="auth-msg err" id="errorBox"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ✅ 로딩 순서 고정 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../shared/config.js"></script>
+  <script src="../shared/sb.js"></script>
+  <script src="../shared/app.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginId   = document.getElementById('loginId');
+      const loginPw   = document.getElementById('loginPw');
+      const errorBox  = document.getElementById('errorBox');
+      const btnLogin  = document.getElementById('btnLogin');
+      const btnGoSignup = document.getElementById('btnGoSignup');
+      const togglePw  = document.getElementById('togglePw');
+
+      // ✅ 핵심: sb는 반드시 함수 호출로 "클라이언트"를 가져온다
+      const sb = (window.raon && typeof window.raon.sb === 'function')
+        ? window.raon.sb()
+        : null;
+
+      if (!sb || typeof sb.from !== 'function') {
+        errorBox.textContent =
+          '초기화 오류: Supabase 연결이 준비되지 않았습니다.\n' +
+          'shared/config.js / shared/sb.js 로딩을 확인하세요.';
+        console.error('[RAON] sb init failed:', sb);
+        return;
+      }
+
+      togglePw?.addEventListener('click', () => {
+        loginPw.type = (loginPw.type === 'password') ? 'text' : 'password';
+      });
+
+      async function login() {
+        const username = (loginId.value || '').trim();
+        const password = (loginPw.value || '').trim();
+        errorBox.textContent = '';
+
+        if (!username || !password) {
+          errorBox.textContent = '아이디와 비밀번호를 입력해주세요.';
+          return;
+        }
+
+        const { data, error } = await sb
+          .from('app_users')
+          .select('id, username, password_hash, approved, name, amount, bank_account, status, realized_amount, role')
+          .eq('username', username)
+          .eq('password_hash', password) // ⚠️ 현재 구조: 테스트용 평문 비교
+          .maybeSingle();
+
+        if (error || !data) {
+          console.error('[login] error:', error);
+          errorBox.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+          return;
+        }
+
+        if (data.approved === false) {
+          errorBox.textContent = '관리자 승인 대기 중입니다.';
+          return;
+        }
+
+        // 로그인 상태 저장 (대시보드가 이 키를 읽도록 통일)
+        const safeUser = { ...data };
+        delete safeUser.password_hash;
+
+        localStorage.setItem('raonai_user_logged_in', 'true');
+        localStorage.setItem('raonai_current_user', JSON.stringify(safeUser));
+
+        window.location.href = 'dashboard.html';
+      }
+
+      btnLogin.addEventListener('click', login);
+      loginPw.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') login();
+      });
+
+      btnGoSignup.addEventListener('click', () => {
+        window.location.href = 'signup.html';
+      });
+    });
+  </script>
+</body>
+</html>
+<head>
+  <meta charset="UTF-8" />
+  <title>RAON AI PROCESSOR - 로그인</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="../shared/theme.css" />
+
+  <!-- (선택) favicon 없으면 404만 뜹니다. 기능 영향 없음 -->
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png" />
+  <meta name="theme-color" content="#0a1120" />
+</head>
+
+<body class="auth-page">
+  <main class="auth-wrap">
+    <section class="auth-card" aria-label="로그인 카드">
+      <div class="auth-brand">
+        <div class="auth-title">RAON <span class="accent">AI</span> <span class="thin">PROCESSOR</span></div>
+        <div class="auth-sub">AI 투자 프로세서를 이용하려면 로그인이 필요합니다.</div>
+      </div>
+
+      <div class="auth-form">
+        <label class="auth-label" for="loginId">아이디</label>
+        <input class="auth-input" id="loginId" type="text" placeholder="아이디를 입력하세요" autocomplete="username" />
+
+        <label class="auth-label" for="loginPw">비밀번호</label>
+        <div class="auth-password">
+          <input class="auth-input" id="loginPw" type="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password" />
+          <button class="auth-eye" id="togglePw" type="button" aria-label="비밀번호 보기">👁</button>
+        </div>
+
+        <!-- ✅ 하단 버튼 1세트만 유지 (로그인/회원가입) -->
+        <div class="auth-actions">
+          <button class="auth-btn primary" id="btnLogin" type="button">로그인</button>
+          <button class="auth-btn" id="btnGoSignup" type="button">회원가입</button>
+        </div>
+
+        <div class="auth-msg err" id="errorBox"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ✅ 로딩 순서 고정 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../shared/config.js"></script>
+  <script src="../shared/sb.js"></script>
+  <script src="../shared/app.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginId   = document.getElementById('loginId');
+      const loginPw   = document.getElementById('loginPw');
+      const errorBox  = document.getElementById('errorBox');
+      const btnLogin  = document.getElementById('btnLogin');
+      const btnGoSignup = document.getElementById('btnGoSignup');
+      const togglePw  = document.getElementById('togglePw');
+
+      // ✅ 핵심: sb는 반드시 함수 호출로 "클라이언트"를 가져온다
+      const sb = (window.raon && typeof window.raon.sb === 'function')
+        ? window.raon.sb()
+        : null;
+
+      if (!sb || typeof sb.from !== 'function') {
+        errorBox.textContent =
+          '초기화 오류: Supabase 연결이 준비되지 않았습니다.\n' +
+          'shared/config.js / shared/sb.js 로딩을 확인하세요.';
+        console.error('[RAON] sb init failed:', sb);
+        return;
+      }
+
+      togglePw?.addEventListener('click', () => {
+        loginPw.type = (loginPw.type === 'password') ? 'text' : 'password';
+      });
+
+      async function login() {
+        const username = (loginId.value || '').trim();
+        const password = (loginPw.value || '').trim();
+        errorBox.textContent = '';
+
+        if (!username || !password) {
+          errorBox.textContent = '아이디와 비밀번호를 입력해주세요.';
+          return;
+        }
+
+        const { data, error } = await sb
+          .from('app_users')
+          .select('id, username, password_hash, approved, name, amount, bank_account, status, realized_amount, role')
+          .eq('username', username)
+          .eq('password_hash', password) // ⚠️ 현재 구조: 테스트용 평문 비교
+          .maybeSingle();
+
+        if (error || !data) {
+          console.error('[login] error:', error);
+          errorBox.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+          return;
+        }
+
+        if (data.approved === false) {
+          errorBox.textContent = '관리자 승인 대기 중입니다.';
+          return;
+        }
+
+        // 로그인 상태 저장 (대시보드가 이 키를 읽도록 통일)
+        const safeUser = { ...data };
+        delete safeUser.password_hash;
+
+        localStorage.setItem('raonai_user_logged_in', 'true');
+        localStorage.setItem('raonai_current_user', JSON.stringify(safeUser));
+
+        window.location.href = 'dashboard.html';
+      }
+
+      btnLogin.addEventListener('click', login);
+      loginPw.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') login();
+      });
+
+      btnGoSignup.addEventListener('click', () => {
+        window.location.href = 'signup.html';
+      });
+    });
+  </script>
+</body>
+</html>
