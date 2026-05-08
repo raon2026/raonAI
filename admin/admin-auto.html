@@ -77,12 +77,34 @@
 
         <div class="grid" style="margin-top:12px">
           <div class="row-col">
-            <label for="min_rate">최소 비율</label>
+            <label for="min_rate">수익 최소 퍼센트</label>
             <input id="min_rate" type="number" step="0.0001" min="0" />
           </div>
           <div class="row-col">
-            <label for="max_rate">최대 비율</label>
+            <label for="max_rate">수익 최대 퍼센트</label>
             <input id="max_rate" type="number" step="0.0001" min="0" />
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:12px">
+          <div class="row-col">
+            <label for="profit_chance">수익 확률 (%)</label>
+            <input id="profit_chance" type="number" step="0.01" min="0" max="100" />
+          </div>
+          <div class="row-col">
+            <label for="loss_chance">손실 확률 (%)</label>
+            <input id="loss_chance" type="number" step="0.01" min="0" max="100" />
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:12px">
+          <div class="row-col">
+            <label for="loss_min_rate">손실 최소 퍼센트</label>
+            <input id="loss_min_rate" type="number" step="0.0001" min="0" />
+          </div>
+          <div class="row-col">
+            <label for="loss_max_rate">손실 최대 퍼센트</label>
+            <input id="loss_max_rate" type="number" step="0.0001" min="0" />
           </div>
         </div>
 
@@ -153,6 +175,10 @@
         document.getElementById('end_hour').value = row.end_hour ?? 18;
         document.getElementById('min_rate').value = row.min_rate ?? 0.0005;
         document.getElementById('max_rate').value = row.max_rate ?? 0.002;
+        document.getElementById('profit_chance').value = row.profit_chance ?? 80;
+        document.getElementById('loss_chance').value = row.loss_chance ?? 20;
+        document.getElementById('loss_min_rate').value = row.loss_min_rate ?? 0.0002;
+        document.getElementById('loss_max_rate').value = row.loss_max_rate ?? 0.001;
         document.getElementById('daily_user_cap').value = row.daily_user_cap ?? 50000;
         document.getElementById('daily_system_cap').value = row.daily_system_cap ?? 5000000;
         document.getElementById('max_single_payout').value = row.max_single_payout ?? 10000;
@@ -161,7 +187,9 @@
           자동지급: <b>${row.enabled ? 'ON' : 'OFF'}</b><br/>
           간격: <b>${row.every_minutes}분</b><br/>
           시간창: <b>${row.start_hour}:00 ~ ${row.end_hour}:00</b><br/>
-          비율: <b>${row.min_rate} ~ ${row.max_rate}</b><br/>
+          수익 퍼센트: <b>${row.min_rate} ~ ${row.max_rate}</b><br/>
+          수익/손실 확률: <b>${row.profit_chance ?? 80}% / ${row.loss_chance ?? 20}%</b><br/>
+          손실 퍼센트: <b>${row.loss_min_rate ?? 0.0002} ~ ${row.loss_max_rate ?? 0.001}</b><br/>
           유저 하루 최대: <b>${Number(row.daily_user_cap || 0).toLocaleString('ko-KR')}원</b><br/>
           시스템 하루 최대: <b>${Number(row.daily_system_cap || 0).toLocaleString('ko-KR')}원</b><br/>
           1회 최대 지급: <b>${Number(row.max_single_payout || 0).toLocaleString('ko-KR')}원</b>
@@ -197,6 +225,10 @@
           end_hour: Number(document.getElementById('end_hour').value || 0),
           min_rate: Number(document.getElementById('min_rate').value || 0),
           max_rate: Number(document.getElementById('max_rate').value || 0),
+          profit_chance: Number(document.getElementById('profit_chance').value || 0),
+          loss_chance: Number(document.getElementById('loss_chance').value || 0),
+          loss_min_rate: Number(document.getElementById('loss_min_rate').value || 0),
+          loss_max_rate: Number(document.getElementById('loss_max_rate').value || 0),
           daily_user_cap: Number(document.getElementById('daily_user_cap').value || 0),
           daily_system_cap: Number(document.getElementById('daily_system_cap').value || 0),
           max_single_payout: Number(document.getElementById('max_single_payout').value || 0),
@@ -205,7 +237,10 @@
 
         if (payload.every_minutes < 1) return setErr('지급 간격은 1분 이상이어야 합니다.');
         if (payload.start_hour < 0 || payload.start_hour > 23 || payload.end_hour < 0 || payload.end_hour > 23) return setErr('시작/종료 시간은 0~23 사이여야 합니다.');
-        if (payload.min_rate < 0 || payload.max_rate < 0 || payload.max_rate < payload.min_rate) return setErr('비율 범위를 다시 확인해주세요.');
+        if (payload.min_rate < 0 || payload.max_rate < 0 || payload.max_rate < payload.min_rate) return setErr('수익 퍼센트 범위를 다시 확인해주세요.');
+        if (payload.profit_chance < 0 || payload.profit_chance > 100 || payload.loss_chance < 0 || payload.loss_chance > 100) return setErr('수익/손실 확률은 0~100 사이여야 합니다.');
+        if ((payload.profit_chance + payload.loss_chance) !== 100) return setErr('수익 확률과 손실 확률의 합은 100이어야 합니다.');
+        if (payload.loss_min_rate < 0 || payload.loss_max_rate < 0 || payload.loss_max_rate < payload.loss_min_rate) return setErr('손실 퍼센트 범위를 다시 확인해주세요.');
         if (payload.daily_user_cap < 0 || payload.daily_system_cap < 0 || payload.max_single_payout < 0) return setErr('한도 값은 0 이상이어야 합니다.');
 
         const { error } = await sb
